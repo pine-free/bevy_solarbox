@@ -7,7 +7,10 @@ mod planets {
 
     use bevy::{ecs::query::QueryData, prelude::*};
 
-    pub struct PlanetPlugin;
+    #[derive(Default)]
+    pub struct PlanetPlugin {
+        pub debug: bool,
+    }
 
     impl Plugin for PlanetPlugin {
         fn build(&self, app: &mut App) {
@@ -113,6 +116,7 @@ mod planets {
     fn move_orbits(
         planets: Populated<(Entity, OrbitQuery)>,
         mut transforms: Query<&mut Transform>,
+        mut gizmos: Gizmos,
         anchors: Populated<(Entity, &Anchor)>,
     ) -> Result {
         for (a, orb) in anchors {
@@ -128,6 +132,11 @@ mod planets {
             info!("position {planet}: {:?}", planet_tr.translation);
             planet_tr.translation =
                 -to_orbit_center.extend(0.).normalize() * **orbit.radius + anchor_pos.translation;
+            // gizmos.arrow_2d(
+            //     planet_tr.translation.xy(),
+            //     planet_tr.translation.xy() + tangential_orbit.normalize() * **orbit.speed * 20.,
+            //     LinearRgba::RED,
+            // );
             planet_tr.translation += (tangential_orbit.normalize() * **orbit.speed).extend(0.);
         }
         Ok(())
@@ -144,7 +153,7 @@ fn setup() -> impl SceneList {
         #Planet2
         @planets::planet(40., Color::Lcha(Lcha::sequential_dispersed(2)))
         Transform::from_translation(Vec3::X)
-        OrbitSpeed(1.)
+        OrbitSpeed(0.02)
         OrbitRadius(215.)
         OrbitAnchor(#OrbitCenter)
         --
@@ -165,7 +174,7 @@ fn setup() -> impl SceneList {
         #Planet4
         @planets::planet(10., Color::Lcha(Lcha::sequential_dispersed(4)))
         Transform::from_translation(Vec3::X)
-        OrbitSpeed(-3.)
+        OrbitSpeed(-0.05)
         OrbitRadius(100.)
         OrbitAnchor(#Planet2)
 
@@ -174,7 +183,7 @@ fn setup() -> impl SceneList {
 
 fn main() {
     App::new()
-        .add_plugins((DefaultPlugins, PlanetPlugin))
+        .add_plugins((DefaultPlugins, PlanetPlugin::default()))
         .add_systems(Startup, setup.spawn())
         .run();
 }
