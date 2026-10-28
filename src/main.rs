@@ -8,6 +8,25 @@ use crate::{
 mod planets;
 mod simulation_settings;
 mod simulation_ui;
+mod bg_shader {
+    use bevy::{
+        prelude::*,
+        render::render_resource::{AsBindGroup, ShaderType},
+    };
+
+    #[derive(Asset, TypePath, AsBindGroup, ShaderType, Debug, Clone)]
+    #[uniform(0, BackgroundOrbitalsMaterial)]
+    pub struct BackgroundOrbitalsMaterial {
+        /// Radius, anchor position
+        test: Vec2,
+    }
+
+    impl<'a> From<&'a BackgroundOrbitalsMaterial> for BackgroundOrbitalsMaterial {
+        fn from(value: &'a BackgroundOrbitalsMaterial) -> Self {
+            value.clone()
+        }
+    }
+}
 
 #[derive(Default, Clone, Copy, Debug, Component)]
 pub struct MainCamera;
