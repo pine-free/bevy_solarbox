@@ -21,12 +21,12 @@ fn setup() -> impl SceneList {
         #OrbitCenter
         Transform::from_translation(Vec3::ZERO)
         --
-        // #Orbit3
-        // @planets::orbit(100., Color::WHITE.with_alpha(0.1), #Planet2)
-        // --
-        // #Orbit2
-        // @planets::orbit(215., Color::WHITE.with_alpha(0.1), #OrbitCenter)
-        // --
+        #Orbit3
+        @planets::orbit(100., Color::WHITE.with_alpha(0.1), #Planet2)
+        --
+        #Orbit2
+        @planets::orbit(215., Color::WHITE.with_alpha(0.1), #OrbitCenter)
+        --
         #Planet2
         @planets::planet(40., Color::Lcha(Lcha::sequential_dispersed(2)))
         Transform::from_translation(Vec3::X * 215.)

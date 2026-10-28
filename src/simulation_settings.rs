@@ -1,8 +1,14 @@
 use bevy::{
-    feathers::controls::FeathersSlider,
+    feathers::{
+        controls::{FeathersCheckbox, FeathersSlider},
+        display::caption,
+    },
     prelude::*,
+    ui::Checked,
     ui_widgets::{SliderPrecision, SliderStep, SliderValue, ValueChange, slider_self_update},
 };
+
+use crate::planets::Orbit;
 
 pub struct SimulationSettingsPlugin;
 
@@ -19,20 +25,42 @@ pub fn config_ui() -> impl Scene {
             width: percent(100),
             align_items: AlignItems::Start,
             display: Display::Flex,
-            column_gap: px(8)
+            flex_direction: FlexDirection::Column,
+            column_gap: px(8),
+            row_gap: px(8)
         }
         Children [
-            Text::new("Simulation speed")
-            --
-            @FeathersSlider {
-                @max: 10.0
+            Node {
+                width: percent(100),
+                flex_direction: FlexDirection::Row,
+                column_gap: px(8),
             }
-            SliderValue(1.0)
-            SliderStep(0.1)
-            SliderPrecision(2)
-            on(slider_self_update)
-            on(|event: On<ValueChange<f32>>, mut config: ResMut<SimulationConfig>| {
-                config.speed_modifier = event.value;
+            Children [
+                Text::new("Simulation speed")
+                --
+                @FeathersSlider {
+                    @max: 10.0
+                }
+                SliderValue(1.0)
+                SliderStep(0.1)
+                SliderPrecision(2)
+                on(slider_self_update)
+                on(|event: On<ValueChange<f32>>, mut config: ResMut<SimulationConfig>| {
+                    config.speed_modifier = event.value;
+                })
+            ]
+            --
+            @FeathersCheckbox {
+                @caption: bsn! { @caption("Show orbits") }
+            }
+            on(|change: On<ValueChange<bool>>, mut commands: Commands, orbits: Query<Entity, With<Orbit>>| {
+                if change.value {
+                    orbits.into_iter().for_each(|e| {commands.entity(e).insert(Visibility::Visible);});
+                    commands.entity(change.source).insert(Checked);
+                } else {
+                    orbits.into_iter().for_each(|e| {commands.entity(e).insert(Visibility::Hidden);});
+                    commands.entity(change.source).remove::<Checked>();
+                }
             })
         ]
     }
