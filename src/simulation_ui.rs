@@ -26,8 +26,8 @@ fn ui_root() -> impl Scene {
     bsn! {
         UiRoot
         Node {
-            width: percent(40),
-            height: percent(40),
+            width: percent(25),
+            height: percent(100),
             align_items: AlignItems::Start,
             justify_content: JustifyContent::Start,
             display: Display::Flex,

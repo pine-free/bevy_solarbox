@@ -32,8 +32,8 @@ pub fn config_ui() -> impl Scene {
         Children [
             Node {
                 width: percent(100),
-                flex_direction: FlexDirection::Row,
-                column_gap: px(8),
+                flex_direction: FlexDirection::Column,
+                row_gap: px(8),
             }
             Children [
                 Text::new("Simulation speed")
@@ -52,8 +52,8 @@ pub fn config_ui() -> impl Scene {
             --
             Node {
                 width: percent(100),
-                flex_direction: FlexDirection::Row,
-                column_gap: px(8),
+                flex_direction: FlexDirection::Column,
+                row_gap: px(8),
             }
             Children [
                 Text::new("Zoom")
