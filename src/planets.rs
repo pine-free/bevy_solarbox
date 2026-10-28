@@ -5,6 +5,8 @@ use bevy::{
     prelude::*,
 };
 
+use crate::simulation_settings::{SimulationConfig, SimulationSettingsPlugin};
+
 #[derive(Default)]
 pub struct PlanetPlugin {
     pub debug: bool,
@@ -12,7 +14,8 @@ pub struct PlanetPlugin {
 
 impl Plugin for PlanetPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(FixedUpdate, move_orbits);
+        app.add_plugins(SimulationSettingsPlugin)
+            .add_systems(FixedUpdate, move_orbits);
     }
 }
 
@@ -126,6 +129,7 @@ pub fn orbit(radius: f32, color: Color, anchor: EntityTemplate) -> impl Scene {
 
 fn move_orbits(
     planets: Populated<(Entity, OrbitQuery), With<Planet>>,
+    settings: Res<SimulationConfig>,
     mut transforms: Query<&mut Transform>,
     mut gizmos: Gizmos,
 ) -> Result {
@@ -145,7 +149,8 @@ fn move_orbits(
         //     planet_tr.translation.xy() + tangential_orbit.normalize() * **orbit.speed * 20.,
         //     LinearRgba::RED,
         // );
-        planet_tr.translation += (tangential_orbit.normalize() * **orbit.speed).extend(0.);
+        planet_tr.translation +=
+            (tangential_orbit.normalize() * **orbit.speed * settings.speed_modifier).extend(0.);
     }
     Ok(())
 }
