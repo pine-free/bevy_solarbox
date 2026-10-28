@@ -50,6 +50,29 @@ pub fn config_ui() -> impl Scene {
                 })
             ]
             --
+            Node {
+                width: percent(100),
+                flex_direction: FlexDirection::Row,
+                column_gap: px(8),
+            }
+            Children [
+                Text::new("Zoom")
+                --
+                @FeathersSlider {
+                    @max: 5.0,
+                    @min: 0.2
+                }
+                SliderValue(1.0)
+                SliderStep(0.1)
+                SliderPrecision(2)
+                on(slider_self_update)
+                on(|event: On<ValueChange<f32>>, camera: Single<&mut Projection, With<Camera>>| {
+                    let mut projection = camera;
+                    let Projection::Orthographic(ref mut orthographic) = **projection else {panic!("unsupported projection type")};
+                    orthographic.scale = event.value;
+                })
+            ]
+            --
             @FeathersCheckbox {
                 @caption: bsn! { @caption("Show orbits") }
             }
