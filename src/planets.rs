@@ -14,7 +14,7 @@ pub struct PlanetPlugin {
 
 impl Plugin for PlanetPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins(SimulationSettingsPlugin)
+        app.add_plugins((SimulationSettingsPlugin, MeshPickingPlugin))
             .add_systems(FixedUpdate, move_orbits);
     }
 }
