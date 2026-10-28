@@ -16,12 +16,12 @@ fn fragment(in: VertexOutput) -> @location(0) vec4<f32> {
     for (var i = 0; i < buf_size; i++) {
         var orbit_radius = material.orbit_data[i].z;
         if orbit_radius < 0 {
-                discard;
+            discard;
         }
         var l = length(in.world_position.xy - material.orbit_data[i].xy);
         
         if l <= orbit_radius+1 && l >= orbit_radius-1 {
-                return vec4f(vec3f(1.0), 0.5);
+                return vec4f(vec3f(0.3), 0.5);
         } 
     }
 

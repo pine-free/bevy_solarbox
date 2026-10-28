@@ -8,7 +8,7 @@ use bevy::{
     ui_widgets::{SliderPrecision, SliderStep, SliderValue, ValueChange, slider_self_update},
 };
 
-use crate::planets::Orbit;
+use crate::{bg_shader::OrbitsDisplayPlane, planets::Orbit};
 
 pub struct SimulationSettingsPlugin;
 
@@ -53,12 +53,15 @@ pub fn config_ui() -> impl Scene {
             @FeathersCheckbox {
                 @caption: bsn! { @caption("Show orbits") }
             }
-            on(|change: On<ValueChange<bool>>, mut commands: Commands, orbits: Query<Entity, With<Orbit>>| {
+            // FIXME if orbits start out invisible then they show up in front of
+            // the planets for some reason...
+            Checked
+            on(|change: On<ValueChange<bool>>, mut commands: Commands, orbits: Single<Entity, With<OrbitsDisplayPlane>>| {
                 if change.value {
-                    orbits.into_iter().for_each(|e| {commands.entity(e).insert(Visibility::Visible);});
+                    commands.entity(*orbits).insert(Visibility::Inherited);
                     commands.entity(change.source).insert(Checked);
                 } else {
-                    orbits.into_iter().for_each(|e| {commands.entity(e).insert(Visibility::Hidden);});
+                    commands.entity(*orbits).insert(Visibility::Hidden);
                     commands.entity(change.source).remove::<Checked>();
                 }
             })
