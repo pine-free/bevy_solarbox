@@ -15,7 +15,7 @@ mod bg_shader {
         sprite_render::{Material2d, Material2dPlugin},
     };
 
-    use crate::planets::OrbitQuery;
+    use crate::{MainCamera, planets::OrbitQuery};
 
     pub fn plugin(app: &mut App) {
         app.add_plugins(Material2dPlugin::<BackgroundOrbitalsMaterial>::default())
@@ -35,7 +35,7 @@ mod bg_shader {
     }
 
     fn update_orbits(
-        mut bg: Single<&MeshMaterial2d<BackgroundOrbitalsMaterial>>,
+        bg: Single<&MeshMaterial2d<BackgroundOrbitalsMaterial>>,
         mut material: ResMut<Assets<BackgroundOrbitalsMaterial>>,
         orbits: Query<OrbitQuery>,
         transforms: Query<&Transform>,
@@ -105,11 +105,12 @@ fn setup() -> impl SceneList {
         #OrbitCenter
         Transform::from_translation(Vec3::ZERO)
         --
-        #Orbit3
-        @planets::orbit(100., Color::WHITE.with_alpha(0.1), #Planet2)
-        --
-        #Orbit2
-        @planets::orbit(215., Color::WHITE.with_alpha(0.1), #OrbitCenter)
+        #Planet1
+        @planets::planet(30., Color::Lcha(Lcha::sequential_dispersed(1)))
+        Transform::from_translation(Vec3::X * 115.)
+        OrbitSpeed::new(0.1)
+        OrbitRadius(115.)
+        OrbitAnchor(#OrbitCenter)
         --
         #Planet2
         @planets::planet(40., Color::Lcha(Lcha::sequential_dispersed(2)))
@@ -130,7 +131,11 @@ fn setup() -> impl SceneList {
 
 fn main() {
     App::new()
-        .add_plugins((DefaultPlugins, PlanetPlugin::default(), SimulationUiPlugin))
+        .add_plugins((
+            DefaultPlugins,
+            PlanetPlugin::default(),
+            // SimulationUiPlugin
+        ))
         .add_systems(Startup, setup.spawn())
         .run();
 }
