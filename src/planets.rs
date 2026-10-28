@@ -7,6 +7,7 @@ use bevy::{
 
 use crate::{
     MainCamera, bg_shader,
+    planet_shader::{self, PlanetMaterial},
     simulation_settings::{SimulationConfig, SimulationSettingsPlugin},
 };
 
@@ -21,6 +22,7 @@ impl Plugin for PlanetPlugin {
             SimulationSettingsPlugin,
             MeshPickingPlugin,
             bg_shader::plugin,
+            planet_shader::plugin,
         ))
         .add_systems(FixedUpdate, move_orbits);
     }
@@ -142,8 +144,8 @@ pub struct OrbitQuery {
 pub fn planet(radius: f32, color: Color) -> impl Scene {
     bsn! {
         Planet
-        Mesh2d(asset_value(Circle::new(radius)))
-        MeshMaterial2d<ColorMaterial>(asset_value(color))
+        Mesh2d(asset_value(Rectangle::from_length(radius * 2.)))
+        MeshMaterial2d<PlanetMaterial>(asset_value(PlanetMaterial::new(color.to_linear().to_vec3(), radius, Vec2::ZERO)))
         on(|drag: On<PointerDragStart>, mut speeds: Query<&mut OrbitSpeed>| -> Result {
             info!("drag start");
             speeds.get_mut(drag.entity)?.disable();

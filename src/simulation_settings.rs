@@ -18,6 +18,25 @@ impl Plugin for SimulationSettingsPlugin {
     }
 }
 
+pub fn slider(text: String, slider_elem: impl Scene) -> impl Scene {
+    bsn! {
+        Node {
+            width: percent(100),
+            flex_direction: FlexDirection::Column,
+            row_gap: px(8),
+        }
+        Children [
+            Text::new(text)
+            --
+            @slider_elem
+            SliderValue(1.0)
+            SliderStep(0.1)
+            SliderPrecision(2)
+            on(slider_self_update)
+        ]
+    }
+}
+
 pub fn config_ui() -> impl Scene {
     bsn! {
         #ConfigUi
@@ -30,48 +49,32 @@ pub fn config_ui() -> impl Scene {
             row_gap: px(8)
         }
         Children [
-            Node {
-                width: percent(100),
-                flex_direction: FlexDirection::Column,
-                row_gap: px(8),
-            }
-            Children [
-                Text::new("Simulation speed")
-                --
-                @FeathersSlider {
-                    @max: 10.0
+            @slider(
+                "Simulation speed".to_string(),
+                bsn! {
+                    @FeathersSlider {
+                        @max: 10.0
+                    }
+                    on(|event: On<ValueChange<f32>>, mut config: ResMut<SimulationConfig>| {
+                        config.speed_modifier = event.value;
+                    })
                 }
-                SliderValue(1.0)
-                SliderStep(0.1)
-                SliderPrecision(2)
-                on(slider_self_update)
-                on(|event: On<ValueChange<f32>>, mut config: ResMut<SimulationConfig>| {
-                    config.speed_modifier = event.value;
-                })
-            ]
+            )
             --
-            Node {
-                width: percent(100),
-                flex_direction: FlexDirection::Column,
-                row_gap: px(8),
-            }
-            Children [
-                Text::new("Zoom")
-                --
-                @FeathersSlider {
-                    @max: 5.0,
-                    @min: 0.2
+            @slider(
+                "Zoom".to_string(),
+                bsn! {
+                    @FeathersSlider {
+                        @max: 5.0,
+                        @min: 0.2
+                    }
+                    on(|event: On<ValueChange<f32>>, camera: Single<&mut Projection, With<Camera>>| {
+                        let mut projection = camera;
+                        let Projection::Orthographic(ref mut orthographic) = **projection else {panic!("unsupported projection type")};
+                        orthographic.scale = event.value;
+                    })
                 }
-                SliderValue(1.0)
-                SliderStep(0.1)
-                SliderPrecision(2)
-                on(slider_self_update)
-                on(|event: On<ValueChange<f32>>, camera: Single<&mut Projection, With<Camera>>| {
-                    let mut projection = camera;
-                    let Projection::Orthographic(ref mut orthographic) = **projection else {panic!("unsupported projection type")};
-                    orthographic.scale = event.value;
-                })
-            ]
+            )
             --
             @FeathersCheckbox {
                 @caption: bsn! { @caption("Show orbits") }
