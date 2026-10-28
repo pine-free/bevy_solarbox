@@ -12,13 +12,20 @@ mod bg_shader {
     use bevy::{
         prelude::*,
         render::render_resource::{AsBindGroup, ShaderType},
+        sprite_render::Material2d,
     };
 
     #[derive(Asset, TypePath, AsBindGroup, ShaderType, Debug, Clone)]
     #[uniform(0, BackgroundOrbitalsMaterial)]
     pub struct BackgroundOrbitalsMaterial {
-        /// Radius, anchor position
-        test: Vec2,
+        /// Radius (x), anchor position (y, z)
+        orbits_data: [Vec3; 128],
+    }
+
+    impl Material2d for BackgroundOrbitalsMaterial {
+        fn fragment_shader() -> bevy::shader::ShaderRef {
+            "orbits.wgsl".into()
+        }
     }
 
     impl<'a> From<&'a BackgroundOrbitalsMaterial> for BackgroundOrbitalsMaterial {
