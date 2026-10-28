@@ -36,5 +36,8 @@ fn ui_root() -> impl Scene {
         }
         TabGroup
         ThemeBackgroundColor(tokens::WINDOW_BG)
+        Children [
+            @crate::simulation_settings::config_ui()
+        ]
     }
 }
