@@ -6,7 +6,7 @@ use bevy::{
 };
 
 use crate::{
-    MainCamera,
+    MainCamera, bg_shader,
     simulation_settings::{SimulationConfig, SimulationSettingsPlugin},
 };
 
@@ -17,8 +17,12 @@ pub struct PlanetPlugin {
 
 impl Plugin for PlanetPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins((SimulationSettingsPlugin, MeshPickingPlugin))
-            .add_systems(FixedUpdate, move_orbits);
+        app.add_plugins((
+            SimulationSettingsPlugin,
+            MeshPickingPlugin,
+            bg_shader::plugin,
+        ))
+        .add_systems(FixedUpdate, move_orbits);
     }
 }
 
@@ -130,9 +134,9 @@ impl std::ops::Deref for OrbitCenter {
 #[derive(QueryData)]
 #[query_data(derive(Debug))]
 pub struct OrbitQuery {
-    speed: &'static OrbitSpeed,
-    radius: &'static OrbitRadius,
-    orbit_anchor: &'static OrbitAnchor,
+    pub speed: &'static OrbitSpeed,
+    pub radius: &'static OrbitRadius,
+    pub orbit_anchor: &'static OrbitAnchor,
 }
 
 pub fn planet(radius: f32, color: Color) -> impl Scene {
@@ -140,7 +144,7 @@ pub fn planet(radius: f32, color: Color) -> impl Scene {
         Planet
         Mesh2d(asset_value(Circle::new(radius)))
         MeshMaterial2d<ColorMaterial>(asset_value(color))
-        on(|drag: On<PointerDragEnter>, mut speeds: Query<&mut OrbitSpeed>| -> Result {
+        on(|drag: On<PointerDragStart>, mut speeds: Query<&mut OrbitSpeed>| -> Result {
             info!("drag start");
             speeds.get_mut(drag.entity)?.disable();
             Ok(())

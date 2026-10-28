@@ -12,19 +12,77 @@ mod bg_shader {
     use bevy::{
         prelude::*,
         render::render_resource::{AsBindGroup, ShaderType},
-        sprite_render::Material2d,
+        sprite_render::{Material2d, Material2dPlugin},
     };
+
+    use crate::planets::OrbitQuery;
+
+    pub fn plugin(app: &mut App) {
+        app.add_plugins(Material2dPlugin::<BackgroundOrbitalsMaterial>::default())
+            .add_systems(Startup, setup)
+            .add_systems(PostUpdate, update_orbits);
+    }
+
+    fn setup(window: Single<&Window>, mut commands: Commands) {
+        let size = window.width().max(window.height());
+        commands.spawn_scene(
+            bsn! {
+                Mesh2d(asset_value(Rectangle::default()))
+                MeshMaterial2d<BackgroundOrbitalsMaterial>(asset_value(BackgroundOrbitalsMaterial::default()))
+                Transform::from_scale(Vec3::splat(size).with_z(-2.0))
+            }
+        );
+    }
+
+    fn update_orbits(
+        mut bg: Single<&MeshMaterial2d<BackgroundOrbitalsMaterial>>,
+        mut material: ResMut<Assets<BackgroundOrbitalsMaterial>>,
+        orbits: Query<OrbitQuery>,
+        transforms: Query<&Transform>,
+    ) -> Result {
+        let mut material = material
+            .get_mut(&bg.0)
+            .context("failed to get background material")?;
+
+        let mut orbit_data = vec![];
+        for orbit in orbits {
+            let r = *orbit.radius;
+            let anchor_pos = transforms.get(**orbit.orbit_anchor)?.translation.xy();
+            orbit_data.push(anchor_pos.extend(*r));
+        }
+
+        let v = orbit_data
+            .into_iter()
+            .chain([Vec3::NEG_ONE].into_iter().cycle())
+            .take(128)
+            .collect::<Vec<_>>();
+
+        material.orbits_data = v
+            .as_array::<128>()
+            .cloned()
+            .context("got invalid number of orbit data")?;
+
+        Ok(())
+    }
 
     #[derive(Asset, TypePath, AsBindGroup, ShaderType, Debug, Clone)]
     #[uniform(0, BackgroundOrbitalsMaterial)]
     pub struct BackgroundOrbitalsMaterial {
-        /// Radius (x), anchor position (y, z)
+        /// anchor position (x, y), radius (z)
         orbits_data: [Vec3; 128],
+    }
+
+    impl Default for BackgroundOrbitalsMaterial {
+        fn default() -> Self {
+            Self {
+                orbits_data: [Vec3::NEG_X; 128],
+            }
+        }
     }
 
     impl Material2d for BackgroundOrbitalsMaterial {
         fn fragment_shader() -> bevy::shader::ShaderRef {
-            "orbits.wgsl".into()
+            "orbits.wesl".into()
         }
     }
 
