@@ -5,7 +5,10 @@ use crate::planets::{Anchor, OrbitAnchor, OrbitCenter, OrbitRadius, OrbitSpeed, 
 mod planets {
     use std::{f32, ops::Sub};
 
-    use bevy::{ecs::query::QueryData, prelude::*};
+    use bevy::{
+        ecs::{query::QueryData, template::EntityTemplate},
+        prelude::*,
+    };
 
     #[derive(Default)]
     pub struct PlanetPlugin {
@@ -20,6 +23,9 @@ mod planets {
 
     #[derive(Clone, Copy, Debug, Component, Default)]
     pub struct Planet;
+
+    #[derive(Clone, Copy, Debug, Component, Default)]
+    pub struct Orbit;
 
     #[derive(Clone, Debug, Component)]
     #[require(Transform)]
@@ -113,21 +119,28 @@ mod planets {
         }
     }
 
+    pub fn orbit(radius: f32, color: Color, anchor: EntityTemplate) -> impl Scene {
+        bsn_list! {
+            Orbit
+            Mesh2d(asset_value(Annulus::new(radius - 1., radius + 1.)))
+            MeshMaterial2d<ColorMaterial>(asset_value(color))
+            Transform::default().with_translation(Vec3::ZERO.with_z(-1.))
+            ChildOf(anchor)
+        }
+    }
+
     fn move_orbits(
-        planets: Populated<(Entity, OrbitQuery)>,
+        planets: Populated<(Entity, OrbitQuery), With<Planet>>,
         mut transforms: Query<&mut Transform>,
         mut gizmos: Gizmos,
-        anchors: Populated<(Entity, &Anchor)>,
     ) -> Result {
-        for (a, orb) in anchors {
-            info!("anchor {}: {:?}", a, orb.0);
-        }
         for (planet, orbit) in planets {
             info!("moving planet {planet}");
             let planet_tr = transforms.get(planet)?;
             let anchor_pos = *transforms.get(**orbit.orbit_anchor)?;
             let to_orbit_center = anchor_pos.translation.xy() - planet_tr.translation.xy();
             let tangential_orbit = to_orbit_center.rotate_angle(f32::consts::FRAC_PI_2);
+            info!("after rotation: {:?}", tangential_orbit);
             let mut planet_tr = transforms.get_mut(planet)?;
             info!("position {planet}: {:?}", planet_tr.translation);
             planet_tr.translation =
@@ -150,31 +163,23 @@ fn setup() -> impl SceneList {
         #OrbitCenter
         Transform::from_translation(Vec3::ZERO)
         --
+        #Orbit3
+        @planets::orbit(100., Color::WHITE.with_alpha(0.1), #Planet2)
+        --
+        #Orbit2
+        @planets::orbit(215., Color::WHITE.with_alpha(0.1), #OrbitCenter)
+        --
         #Planet2
         @planets::planet(40., Color::Lcha(Lcha::sequential_dispersed(2)))
-        Transform::from_translation(Vec3::X)
-        OrbitSpeed(0.02)
+        Transform::from_translation(Vec3::X * 215.)
+        OrbitSpeed(0.1)
         OrbitRadius(215.)
         OrbitAnchor(#OrbitCenter)
         --
-        #Planet1
-        @planets::planet(20., Color::Lcha(Lcha::sequential_dispersed(1)))
-        Transform::from_translation(Vec3::X)
-        OrbitSpeed(-2.)
-        OrbitRadius(100.)
-        OrbitAnchor(#OrbitCenter)
-        --
         #Planet3
-        @planets::planet(15., Color::Lcha(Lcha::sequential_dispersed(3)))
-        Transform::from_translation(Vec3::X)
-        OrbitSpeed(0.5)
-        OrbitRadius(432.)
-        OrbitAnchor(#OrbitCenter)
-        --
-        #Planet4
-        @planets::planet(10., Color::Lcha(Lcha::sequential_dispersed(4)))
-        Transform::from_translation(Vec3::X)
-        OrbitSpeed(-0.05)
+        @planets::planet(10., Color::Lcha(Lcha::sequential_dispersed(3)))
+        Transform::from_translation(Vec3::X * 100.)
+        OrbitSpeed(1.)
         OrbitRadius(100.)
         OrbitAnchor(#Planet2)
 
