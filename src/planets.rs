@@ -1,4 +1,4 @@
-use std::{f32, ops::Sub};
+use std::f32;
 
 use bevy::{
     ecs::{query::QueryData, template::EntityTemplate},
