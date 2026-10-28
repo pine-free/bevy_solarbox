@@ -9,9 +9,14 @@ mod planets;
 mod simulation_settings;
 mod simulation_ui;
 
+#[derive(Default, Clone, Copy, Debug, Component)]
+pub struct MainCamera;
+
 fn setup() -> impl SceneList {
     bsn_list! {
+        #MainCamera
         Camera2d
+        MainCamera
         --
         #OrbitCenter
         Transform::from_translation(Vec3::ZERO)
@@ -25,14 +30,14 @@ fn setup() -> impl SceneList {
         #Planet2
         @planets::planet(40., Color::Lcha(Lcha::sequential_dispersed(2)))
         Transform::from_translation(Vec3::X * 215.)
-        OrbitSpeed(0.1)
+        OrbitSpeed::new(0.1)
         OrbitRadius(215.)
         OrbitAnchor(#OrbitCenter)
         --
         #Planet3
         @planets::planet(10., Color::Lcha(Lcha::sequential_dispersed(3)))
         Transform::from_translation(Vec3::X * 100.)
-        OrbitSpeed(1.)
+        OrbitSpeed::new(1.)
         OrbitRadius(100.)
         OrbitAnchor(#Planet2)
 

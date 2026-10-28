@@ -5,7 +5,10 @@ use bevy::{
     prelude::*,
 };
 
-use crate::simulation_settings::{SimulationConfig, SimulationSettingsPlugin};
+use crate::{
+    MainCamera,
+    simulation_settings::{SimulationConfig, SimulationSettingsPlugin},
+};
 
 #[derive(Default)]
 pub struct PlanetPlugin {
@@ -39,11 +42,34 @@ impl std::ops::Deref for Anchor {
 }
 
 #[derive(Clone, Copy, Debug, Component, Default)]
-pub struct OrbitSpeed(pub f32);
+pub struct OrbitSpeed {
+    pub value: f32,
+    memorised_value: Option<f32>,
+}
+
+impl OrbitSpeed {
+    pub fn new(value: f32) -> Self {
+        Self { value, ..default() }
+    }
+
+    pub fn disable(&mut self) {
+        if self.value == 0. {
+            return;
+        }
+        self.memorised_value = Some(self.value);
+        self.value = 0.;
+    }
+
+    pub fn restore(&mut self) {
+        if let Some(v) = self.memorised_value {
+            self.value = v;
+        }
+    }
+}
 
 impl From<f32> for OrbitSpeed {
     fn from(value: f32) -> Self {
-        Self(value)
+        Self { value, ..default() }
     }
 }
 
@@ -51,7 +77,7 @@ impl std::ops::Deref for OrbitSpeed {
     type Target = f32;
 
     fn deref(&self) -> &Self::Target {
-        &self.0
+        &self.value
     }
 }
 
@@ -114,6 +140,27 @@ pub fn planet(radius: f32, color: Color) -> impl Scene {
         Planet
         Mesh2d(asset_value(Circle::new(radius)))
         MeshMaterial2d<ColorMaterial>(asset_value(color))
+        on(|drag: On<PointerDragEnter>, mut speeds: Query<&mut OrbitSpeed>| -> Result {
+            info!("drag start");
+            speeds.get_mut(drag.entity)?.disable();
+            Ok(())
+        })
+        on(|drag: On<PointerDrag>,
+            mut planets: Query<(&mut OrbitRadius, &OrbitAnchor), With<Planet>>,
+            transforms: Query<&mut Transform>,
+            camera: Single<(&Camera, &GlobalTransform), With<MainCamera>>| -> Result {
+            let (camera, camera_tr) = *camera;
+            let (mut radius, anchor) = planets.get_mut(drag.entity)?;
+            let anchor_pos = transforms.get(**anchor)?.translation;
+            let new_translation = camera.viewport_to_world_2d(camera_tr, drag.pointer.position)?.extend(0.);
+            radius.0 = (new_translation - anchor_pos).length();
+            Ok(())
+        })
+        on(|drag: On<PointerDragEnd>, mut speeds: Query<&mut OrbitSpeed>| -> Result {
+            info!("drag end");
+            speeds.get_mut(drag.entity)?.restore();
+            Ok(())
+        })
     }
 }
 
