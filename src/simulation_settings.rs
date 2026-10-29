@@ -17,7 +17,7 @@ use bevy::{
     },
 };
 
-use crate::{MainCamera, bg_shader::OrbitsDisplayPlane, globals, planets::Orbit};
+use crate::{MainCamera, bg_shader::OrbitsDisplayPlane, globals};
 
 pub struct SimulationSettingsPlugin;
 
@@ -192,7 +192,7 @@ pub fn config_ui() -> impl Scene {
                     @FeathersNumberInput
                     CameraXInput
                     NumberInputPrecision(0)
-                    on(|event: On<ValueChange<f32>>, mut commands: Commands, mut config: ResMut<SimulationConfig>| {
+                    on(|event: On<ValueChange<f32>>, _commands: Commands, mut config: ResMut<SimulationConfig>| {
                         config.camera_position.x = event.value;
                         // commands.entity(event.event_target()).insert(NumberInputValue::F32(event.value));
                     })
@@ -213,7 +213,7 @@ pub fn config_ui() -> impl Scene {
                         max_width: px(100),
                         justify_content: JustifyContent::Center
                     }
-                    on(|event: On<ValueChange<f32>>, mut commands: Commands, mut config: ResMut<SimulationConfig>| {
+                    on(|event: On<ValueChange<f32>>, _commands: Commands, mut config: ResMut<SimulationConfig>| {
                         config.camera_position.y = event.value;
                         // commands.entity(event.event_target()).insert(NumberInputValue::F32(event.value));
                     })

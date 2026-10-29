@@ -1,7 +1,7 @@
 use std::f32;
 
 use bevy::{
-    ecs::{query::QueryData, template::EntityTemplate},
+    ecs::query::QueryData,
     prelude::*,
 };
 
@@ -174,7 +174,7 @@ fn move_orbits(
     planets: Populated<(Entity, OrbitQuery), With<Planet>>,
     settings: Res<SimulationConfig>,
     mut transforms: Query<&mut Transform>,
-    mut gizmos: Gizmos,
+    _gizmos: Gizmos,
 ) -> Result {
     for (planet, orbit) in planets {
         // info!("moving planet {planet}");

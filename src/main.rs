@@ -14,7 +14,7 @@ mod simulation_settings;
 mod simulation_ui;
 mod input {
     use bevy::ecs::event::Event;
-    use bevy::input::gestures::PinchGesture;
+    
     use bevy::platform::collections::HashMap;
     use bevy::prelude::*;
 

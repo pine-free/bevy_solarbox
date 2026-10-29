@@ -4,7 +4,7 @@ use bevy::{
     sprite_render::{Material2d, Material2dPlugin},
 };
 
-use crate::{MainCamera, planets::OrbitQuery, simulation_settings::SimulationConfig};
+use crate::{planets::OrbitQuery, simulation_settings::SimulationConfig};
 
 #[derive(Debug, Clone, Copy, Component, Default)]
 pub struct OrbitsDisplayPlane;
@@ -67,7 +67,7 @@ fn update_orbits(
 
     material.orbits_data = v
         .as_array::<128>()
-        .cloned()
+        .copied()
         .context("got invalid number of orbit data")?;
 
     Ok(())
