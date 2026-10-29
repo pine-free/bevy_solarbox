@@ -4,9 +4,12 @@ use bevy::{
             FeathersCheckbox, FeathersNumberInput, FeathersSlider, NumberInputPrecision,
             NumberInputValue,
         },
-        display::{caption, label_small},
+        display::{caption, label, label_small},
     },
-    input::gestures::{PanGesture, PinchGesture},
+    input::{
+        gestures::PinchGesture,
+        mouse::{MouseScrollUnit, MouseWheel},
+    },
     prelude::*,
     ui::Checked,
     ui_widgets::{
@@ -27,14 +30,29 @@ impl Plugin for SimulationSettingsPlugin {
                     .chain()
                     .run_if(resource_changed::<SimulationConfig>),
             )
-            .add_systems(Update, pinch_to_zoom.before(set_camera_zoom));
+            .add_systems(
+                Update,
+                (
+                    pinch_to_zoom.before(set_camera_zoom),
+                    pan_to_move.before(set_camera_position),
+                ),
+            );
     }
 }
 
 fn pinch_to_zoom(mut pinch: MessageReader<PinchGesture>, mut config: ResMut<SimulationConfig>) {
     for PinchGesture(delta) in pinch.read() {
         config.camera_zoom =
-            (config.camera_zoom * (1. + delta)).clamp(globals::ZOOM_MIN, globals::ZOOM_MAX);
+            (config.camera_zoom * (1. - delta)).clamp(globals::ZOOM_MIN, globals::ZOOM_MAX);
+    }
+}
+
+fn pan_to_move(mut pan: MessageReader<MouseWheel>, mut config: ResMut<SimulationConfig>) {
+    for ev in pan.read() {
+        if ev.unit != MouseScrollUnit::Pixel {
+            return;
+        }
+        config.camera_position += vec2(ev.x, -ev.y);
     }
 }
 
@@ -59,14 +77,35 @@ fn set_camera_zoom(
 }
 
 fn set_camera_position(
-    mut camera_tr: Single<&mut Transform, With<MainCamera>>,
     config: Res<SimulationConfig>,
+    x_input: Option<Single<Entity, With<CameraXInput>>>,
+    y_input: Option<Single<Entity, With<CameraYInput>>>,
+    mut camera_tr: Single<&mut Transform, With<MainCamera>>,
+    mut commands: Commands,
 ) {
     camera_tr.translation = config.camera_position.extend(camera_tr.translation.z);
+
+    x_input.inspect(|e| {
+        commands
+            .entity(**e)
+            .insert(NumberInputValue::F32(camera_tr.translation.x));
+    });
+
+    y_input.inspect(|e| {
+        commands
+            .entity(**e)
+            .insert(NumberInputValue::F32(camera_tr.translation.y));
+    });
 }
 
 #[derive(Debug, Clone, Copy, Component, Default)]
 pub struct ZoomSlider;
+
+#[derive(Debug, Clone, Copy, Component, Default)]
+pub struct CameraXInput;
+
+#[derive(Debug, Clone, Copy, Component, Default)]
+pub struct CameraYInput;
 
 pub fn column() -> impl Scene {
     bsn! {Node {
@@ -92,7 +131,7 @@ pub fn slider(text: String, slider_elem: impl Scene) -> impl Scene {
             row_gap: px(8),
         }
         Children [
-            Text::new(text)
+            @label(text)
             --
             @slider_elem
             SliderValue(1.0)
@@ -144,27 +183,30 @@ pub fn config_ui() -> impl Scene {
             @row()
             Children [
                 @column()
+                Node {
+                    justify_content: JustifyContent::Center
+                }
                 Children [
                     @label_small("Camera X")
                     --
                     @FeathersNumberInput
+                    CameraXInput
                     NumberInputPrecision(0)
-                    Node {
-                        flex_grow: 1.0,
-                        max_width: px(100),
-                        justify_content: JustifyContent::Center
-                    }
                     on(|event: On<ValueChange<f32>>, mut commands: Commands, mut config: ResMut<SimulationConfig>| {
                         config.camera_position.x = event.value;
-                        commands.entity(event.event_target()).insert(NumberInputValue::F32(event.value));
+                        // commands.entity(event.event_target()).insert(NumberInputValue::F32(event.value));
                     })
                 ]
                 --
                 @column()
+                Node {
+                    justify_content: JustifyContent::Center
+                }
                 Children [
                     @label_small("Camera Y")
                     --
                     @FeathersNumberInput
+                    CameraYInput
                     NumberInputPrecision(0)
                     Node {
                         flex_grow: 1.0,
@@ -173,7 +215,7 @@ pub fn config_ui() -> impl Scene {
                     }
                     on(|event: On<ValueChange<f32>>, mut commands: Commands, mut config: ResMut<SimulationConfig>| {
                         config.camera_position.y = event.value;
-                        commands.entity(event.event_target()).insert(NumberInputValue::F32(event.value));
+                        // commands.entity(event.event_target()).insert(NumberInputValue::F32(event.value));
                     })
                 ]
             ]
