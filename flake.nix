@@ -25,9 +25,13 @@
         devShells.default = pkgs.mkShell {
           buildInputs = with pkgs; [
             pkg-config
-            rust-bin.beta.latest.default
-            rust-analyzer
-            wgsl-analyzer
+            (rust-bin.beta.latest.default.override {
+              extensions = [
+                "rust-analyzer"
+                "clippy-preview"
+              ];
+            })
+            bacon
           ];
         };
       };

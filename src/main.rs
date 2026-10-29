@@ -1,3 +1,4 @@
+#![warn(clippy::pedantic)]
 use bevy::prelude::*;
 
 use crate::{
