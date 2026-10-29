@@ -170,17 +170,6 @@ pub fn planet(radius: f32, color: Color) -> impl Scene {
     }
 }
 
-pub fn orbit(radius: f32, color: Color, anchor: EntityTemplate) -> impl Scene {
-    bsn! {
-        Orbit
-        Mesh2d(asset_value(Annulus::new(radius - 1., radius + 1.)))
-        MeshMaterial2d<ColorMaterial>(asset_value(color))
-        Transform::default().with_translation(Vec3::ZERO.with_z(-1.))
-        Visibility::Hidden
-        ChildOf(anchor)
-    }
-}
-
 fn move_orbits(
     planets: Populated<(Entity, OrbitQuery), With<Planet>>,
     settings: Res<SimulationConfig>,

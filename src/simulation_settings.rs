@@ -8,14 +8,28 @@ use bevy::{
     ui_widgets::{SliderPrecision, SliderStep, SliderValue, ValueChange, slider_self_update},
 };
 
-use crate::{bg_shader::OrbitsDisplayPlane, planets::Orbit};
+use crate::{MainCamera, bg_shader::OrbitsDisplayPlane, globals, planets::Orbit};
 
 pub struct SimulationSettingsPlugin;
 
 impl Plugin for SimulationSettingsPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<SimulationConfig>();
+        app.init_resource::<SimulationConfig>().add_systems(
+            Update,
+            set_camera_zoom.run_if(resource_changed::<SimulationConfig>),
+        );
     }
+}
+
+fn set_camera_zoom(
+    projection: Single<&mut Projection, With<MainCamera>>,
+    config: Res<SimulationConfig>,
+) {
+    let mut projection = projection;
+    let Projection::Orthographic(ref mut orthographic) = **projection else {
+        panic!("unsupported projection type")
+    };
+    orthographic.scale = config.camera_zoom;
 }
 
 pub fn slider(text: String, slider_elem: impl Scene) -> impl Scene {
@@ -65,13 +79,11 @@ pub fn config_ui() -> impl Scene {
                 "Zoom".to_string(),
                 bsn! {
                     @FeathersSlider {
-                        @max: 5.0,
-                        @min: 0.2
+                        @max: globals::ZOOM_MAX,
+                        @min: globals::ZOOM_MIN
                     }
-                    on(|event: On<ValueChange<f32>>, camera: Single<&mut Projection, With<Camera>>| {
-                        let mut projection = camera;
-                        let Projection::Orthographic(ref mut orthographic) = **projection else {panic!("unsupported projection type")};
-                        orthographic.scale = event.value;
+                    on(|event: On<ValueChange<f32>>, mut config: ResMut<SimulationConfig>| {
+                        config.camera_zoom = event.value;
                     })
                 }
             )
@@ -98,10 +110,14 @@ pub fn config_ui() -> impl Scene {
 #[derive(Debug, Clone, Resource)]
 pub struct SimulationConfig {
     pub speed_modifier: f32,
+    pub camera_zoom: f32,
 }
 
 impl Default for SimulationConfig {
     fn default() -> Self {
-        Self { speed_modifier: 1. }
+        Self {
+            speed_modifier: 1.,
+            camera_zoom: globals::STARTING_ZOOM,
+        }
     }
 }

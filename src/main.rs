@@ -6,6 +6,7 @@ use crate::{
 };
 
 mod bg_shader;
+mod globals;
 mod planet_shader;
 mod planets;
 mod simulation_settings;
