@@ -11,6 +11,20 @@ mod planet_shader;
 mod planets;
 mod simulation_settings;
 mod simulation_ui;
+mod input {
+    use bevy::ecs::event::Event;
+    use bevy::input::gestures::PinchGesture;
+    use bevy::platform::collections::HashMap;
+    use bevy::prelude::*;
+
+    #[derive(Clone, Copy, Debug, Event)]
+    pub enum UserAction {}
+
+    #[derive(Clone, Debug, Component)]
+    pub struct Keymap<T: Event> {
+        mappings: HashMap<T, KeyCode>,
+    }
+}
 
 #[derive(Default, Clone, Copy, Debug, Component)]
 pub struct MainCamera;

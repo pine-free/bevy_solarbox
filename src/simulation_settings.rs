@@ -3,9 +3,12 @@ use bevy::{
         controls::{FeathersCheckbox, FeathersSlider},
         display::caption,
     },
+    input::gestures::PinchGesture,
     prelude::*,
     ui::Checked,
-    ui_widgets::{SliderPrecision, SliderStep, SliderValue, ValueChange, slider_self_update},
+    ui_widgets::{
+        SetSliderValue, SliderPrecision, SliderStep, SliderValue, ValueChange, slider_self_update,
+    },
 };
 
 use crate::{MainCamera, bg_shader::OrbitsDisplayPlane, globals, planets::Orbit};
@@ -14,23 +17,46 @@ pub struct SimulationSettingsPlugin;
 
 impl Plugin for SimulationSettingsPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<SimulationConfig>().add_systems(
-            Update,
-            set_camera_zoom.run_if(resource_changed::<SimulationConfig>),
-        );
+        app.init_resource::<SimulationConfig>()
+            .add_systems(
+                Update,
+                set_camera_zoom
+                    .chain()
+                    .run_if(resource_changed::<SimulationConfig>),
+            )
+            .add_systems(Update, pinch_to_zoom.before(set_camera_zoom));
+    }
+}
+
+fn pinch_to_zoom(mut pinch: MessageReader<PinchGesture>, mut config: ResMut<SimulationConfig>) {
+    for PinchGesture(delta) in pinch.read() {
+        config.camera_zoom =
+            (config.camera_zoom * (1. + delta)).clamp(globals::ZOOM_MIN, globals::ZOOM_MAX);
     }
 }
 
 fn set_camera_zoom(
     projection: Single<&mut Projection, With<MainCamera>>,
+    slider: Option<Single<Entity, With<ZoomSlider>>>,
     config: Res<SimulationConfig>,
+    mut commands: Commands,
 ) {
     let mut projection = projection;
     let Projection::Orthographic(ref mut orthographic) = **projection else {
         panic!("unsupported projection type")
     };
     orthographic.scale = config.camera_zoom;
+
+    if let Some(entity) = slider {
+        commands.trigger(SetSliderValue {
+            entity: *entity,
+            change: bevy::ui_widgets::SliderValueChange::Absolute(config.camera_zoom),
+        });
+    }
 }
+
+#[derive(Debug, Clone, Copy, Component, Default)]
+pub struct ZoomSlider;
 
 pub fn slider(text: String, slider_elem: impl Scene) -> impl Scene {
     bsn! {
@@ -78,6 +104,7 @@ pub fn config_ui() -> impl Scene {
             @slider(
                 "Zoom".to_string(),
                 bsn! {
+                    ZoomSlider
                     @FeathersSlider {
                         @max: globals::ZOOM_MAX,
                         @min: globals::ZOOM_MIN
