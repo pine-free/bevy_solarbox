@@ -1,9 +1,6 @@
 use std::f32;
 
-use bevy::{
-    ecs::query::QueryData,
-    prelude::*,
-};
+use bevy::{ecs::query::QueryData, prelude::*};
 
 use crate::{
     MainCamera, bg_shader,
@@ -12,9 +9,7 @@ use crate::{
 };
 
 #[derive(Default)]
-pub struct PlanetPlugin {
-    pub debug: bool,
-}
+pub struct PlanetPlugin;
 
 impl Plugin for PlanetPlugin {
     fn build(&self, app: &mut App) {
@@ -30,9 +25,6 @@ impl Plugin for PlanetPlugin {
 
 #[derive(Clone, Copy, Debug, Component, Default)]
 pub struct Planet;
-
-#[derive(Clone, Copy, Debug, Component, Default)]
-pub struct Orbit;
 
 #[derive(Clone, Debug, Component)]
 #[require(Transform)]
@@ -104,29 +96,12 @@ impl std::ops::Deref for OrbitRadius {
     }
 }
 
-#[derive(Clone, Copy, Debug, Component, Default)]
-pub struct OrbitCenter(pub Vec2);
-
 #[derive(Clone, Copy, Debug, Component, FromTemplate)]
 #[relationship(relationship_target = Anchor)]
 pub struct OrbitAnchor(pub Entity);
 
 impl std::ops::Deref for OrbitAnchor {
     type Target = Entity;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl From<Vec2> for OrbitCenter {
-    fn from(value: Vec2) -> Self {
-        Self(value)
-    }
-}
-
-impl std::ops::Deref for OrbitCenter {
-    type Target = Vec2;
 
     fn deref(&self) -> &Self::Target {
         &self.0

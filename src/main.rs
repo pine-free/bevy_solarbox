@@ -12,20 +12,6 @@ mod planet_shader;
 mod planets;
 mod simulation_settings;
 mod simulation_ui;
-mod input {
-    use bevy::ecs::event::Event;
-    
-    use bevy::platform::collections::HashMap;
-    use bevy::prelude::*;
-
-    #[derive(Clone, Copy, Debug, Event)]
-    pub enum UserAction {}
-
-    #[derive(Clone, Debug, Component)]
-    pub struct Keymap<T: Event> {
-        mappings: HashMap<T, KeyCode>,
-    }
-}
 
 #[derive(Default, Clone, Copy, Debug, Component)]
 pub struct MainCamera;
@@ -65,7 +51,7 @@ fn setup() -> impl SceneList {
 
 fn main() {
     App::new()
-        .add_plugins((DefaultPlugins, PlanetPlugin::default(), SimulationUiPlugin))
+        .add_plugins((DefaultPlugins, PlanetPlugin, SimulationUiPlugin))
         .add_systems(Startup, setup.spawn())
         .run();
 }

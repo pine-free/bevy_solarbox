@@ -5,6 +5,7 @@
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     rust-overlay.url = "github:oxalica/rust-overlay";
     flake-parts.url = "github:hercules-ci/flake-parts";
+    bevy_cli.url = "github:TheBevyFlock/bevy_cli";
   };
 
   outputs =
@@ -13,6 +14,7 @@
       nixpkgs,
       rust-overlay,
       flake-parts,
+      bevy_cli,
       ...
     }:
     flake-parts.lib.mkFlake { inherit inputs; } {
@@ -25,10 +27,11 @@
         devShells.default = pkgs.mkShell {
           buildInputs = with pkgs; [
             pkg-config
-            (rust-bin.beta.latest.default.override {
+            (rust-bin.nightly.latest.default.override {
               extensions = [
                 "rust-analyzer"
                 "clippy-preview"
+                "rustc-codegen-cranelift-preview"
               ];
             })
             bacon
