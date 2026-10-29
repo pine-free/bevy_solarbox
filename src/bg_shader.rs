@@ -4,7 +4,7 @@ use bevy::{
     sprite_render::{Material2d, Material2dPlugin},
 };
 
-use crate::{MainCamera, planets::OrbitQuery};
+use crate::{MainCamera, planets::OrbitQuery, simulation_settings::SimulationConfig};
 
 #[derive(Debug, Clone, Copy, Component, Default)]
 pub struct OrbitsDisplayPlane;
@@ -12,6 +12,10 @@ pub struct OrbitsDisplayPlane;
 pub fn plugin(app: &mut App) {
     app.add_plugins(Material2dPlugin::<BackgroundOrbitalsMaterial>::default())
         .add_systems(Startup, setup)
+        .add_systems(
+            Update,
+            update_orbits_display.run_if(resource_changed::<SimulationConfig>),
+        )
         .add_systems(PostUpdate, update_orbits);
 }
 
@@ -26,6 +30,16 @@ fn setup(window: Single<&Window>, mut commands: Commands) {
             Transform::from_scale(Vec3::splat(size).with_z(-2.0))
         }
     );
+}
+
+fn update_orbits_display(
+    mut orbits_bg: Single<&mut Transform, With<OrbitsDisplayPlane>>,
+    window: Single<&Window>,
+    config: Res<SimulationConfig>,
+) {
+    let size = window.size().max_element();
+    orbits_bg.translation = config.camera_position.extend(orbits_bg.translation.z);
+    orbits_bg.scale = Vec3::splat(size * config.camera_zoom);
 }
 
 fn update_orbits(
