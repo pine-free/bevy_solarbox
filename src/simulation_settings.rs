@@ -1,9 +1,12 @@
 use bevy::{
     feathers::{
-        controls::{FeathersCheckbox, FeathersSlider},
-        display::caption,
+        controls::{
+            FeathersCheckbox, FeathersNumberInput, FeathersSlider, NumberInputPrecision,
+            NumberInputValue,
+        },
+        display::{caption, label_small},
     },
-    input::gestures::PinchGesture,
+    input::gestures::{PanGesture, PinchGesture},
     prelude::*,
     ui::Checked,
     ui_widgets::{
@@ -20,7 +23,7 @@ impl Plugin for SimulationSettingsPlugin {
         app.init_resource::<SimulationConfig>()
             .add_systems(
                 Update,
-                set_camera_zoom
+                (set_camera_zoom, set_camera_position)
                     .chain()
                     .run_if(resource_changed::<SimulationConfig>),
             )
@@ -55,8 +58,31 @@ fn set_camera_zoom(
     }
 }
 
+fn set_camera_position(
+    mut camera_tr: Single<&mut Transform, With<MainCamera>>,
+    config: Res<SimulationConfig>,
+) {
+    camera_tr.translation = config.camera_position.extend(camera_tr.translation.z);
+}
+
 #[derive(Debug, Clone, Copy, Component, Default)]
 pub struct ZoomSlider;
+
+pub fn column() -> impl Scene {
+    bsn! {Node {
+        width: percent(100),
+        flex_direction: FlexDirection::Column,
+        row_gap: px(8),
+    }}
+}
+
+pub fn row() -> impl Scene {
+    bsn! {Node {
+        width: percent(100),
+        flex_direction: FlexDirection::Row,
+        column_gap: px(8),
+    }}
+}
 
 pub fn slider(text: String, slider_elem: impl Scene) -> impl Scene {
     bsn! {
@@ -115,6 +141,43 @@ pub fn config_ui() -> impl Scene {
                 }
             )
             --
+            @row()
+            Children [
+                @column()
+                Children [
+                    @label_small("Camera X")
+                    --
+                    @FeathersNumberInput
+                    NumberInputPrecision(0)
+                    Node {
+                        flex_grow: 1.0,
+                        max_width: px(100),
+                        justify_content: JustifyContent::Center
+                    }
+                    on(|event: On<ValueChange<f32>>, mut commands: Commands, mut config: ResMut<SimulationConfig>| {
+                        config.camera_position.x = event.value;
+                        commands.entity(event.event_target()).insert(NumberInputValue::F32(event.value));
+                    })
+                ]
+                --
+                @column()
+                Children [
+                    @label_small("Camera Y")
+                    --
+                    @FeathersNumberInput
+                    NumberInputPrecision(0)
+                    Node {
+                        flex_grow: 1.0,
+                        max_width: px(100),
+                        justify_content: JustifyContent::Center
+                    }
+                    on(|event: On<ValueChange<f32>>, mut commands: Commands, mut config: ResMut<SimulationConfig>| {
+                        config.camera_position.y = event.value;
+                        commands.entity(event.event_target()).insert(NumberInputValue::F32(event.value));
+                    })
+                ]
+            ]
+            --
             @FeathersCheckbox {
                 @caption: bsn! { @caption("Show orbits") }
             }
@@ -138,6 +201,7 @@ pub fn config_ui() -> impl Scene {
 pub struct SimulationConfig {
     pub speed_modifier: f32,
     pub camera_zoom: f32,
+    pub camera_position: Vec2,
 }
 
 impl Default for SimulationConfig {
@@ -145,6 +209,7 @@ impl Default for SimulationConfig {
         Self {
             speed_modifier: 1.,
             camera_zoom: globals::STARTING_ZOOM,
+            camera_position: globals::STARTING_CAMERA_POSITION,
         }
     }
 }
