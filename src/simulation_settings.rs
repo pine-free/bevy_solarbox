@@ -24,6 +24,7 @@ pub struct SimulationSettingsPlugin;
 impl Plugin for SimulationSettingsPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<SimulationConfig>()
+            .init_resource::<SelectedPlanet>()
             .add_systems(
                 Update,
                 (set_camera_zoom, set_camera_position)
@@ -64,7 +65,7 @@ fn set_camera_zoom(
 ) {
     let mut projection = projection;
     let Projection::Orthographic(ref mut orthographic) = **projection else {
-        panic!("unsupported projection type")
+        panic!("unsupported projection type");
     };
     orthographic.scale = config.camera_zoom;
 
@@ -107,6 +108,9 @@ pub struct CameraXInput;
 #[derive(Debug, Clone, Copy, Component, Default)]
 pub struct CameraYInput;
 
+#[derive(Debug, Clone, Copy, Component, Default)]
+pub struct ConfigSidebar;
+
 pub fn column() -> impl Scene {
     bsn! {Node {
         width: percent(100),
@@ -145,6 +149,7 @@ pub fn slider(text: String, slider_elem: impl Scene) -> impl Scene {
 pub fn config_ui() -> impl Scene {
     bsn! {
         #ConfigUi
+        ConfigSidebar
         Node {
             width: percent(100),
             align_items: AlignItems::Start,
@@ -245,6 +250,9 @@ pub struct SimulationConfig {
     pub camera_zoom: f32,
     pub camera_position: Vec2,
 }
+
+#[derive(Debug, Clone, Resource, Default)]
+pub struct SelectedPlanet(pub Option<Entity>);
 
 impl Default for SimulationConfig {
     fn default() -> Self {

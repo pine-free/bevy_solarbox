@@ -27,11 +27,9 @@
         devShells.default = pkgs.mkShell {
           buildInputs = with pkgs; [
             pkg-config
-            (rust-bin.nightly.latest.default.override {
+            (rust-bin.stable.latest.default.override {
               extensions = [
                 "rust-analyzer"
-                "clippy-preview"
-                "rustc-codegen-cranelift-preview"
               ];
             })
             bacon

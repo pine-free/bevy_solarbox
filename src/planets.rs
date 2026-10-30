@@ -1,11 +1,19 @@
 use std::f32;
 
-use bevy::{ecs::query::QueryData, prelude::*};
+use bevy::{
+    ecs::query::QueryData,
+    feathers::{
+        containers::{group, group_body, group_header},
+        controls::FeathersNumberInput,
+        display::{caption, label, label_small},
+    },
+    prelude::*,
+};
 
 use crate::{
     MainCamera, bg_shader,
     planet_shader::{self, PlanetMaterial},
-    simulation_settings::{SimulationConfig, SimulationSettingsPlugin},
+    simulation_settings::{SelectedPlanet, SimulationConfig, SimulationSettingsPlugin},
 };
 
 #[derive(Default)]
@@ -116,13 +124,41 @@ pub struct OrbitQuery {
     pub orbit_anchor: &'static OrbitAnchor,
 }
 
+pub fn planet_info() -> impl Scene {
+    bsn! {
+        @group()
+        Children [
+            @group_header()
+            Children [
+                @caption("Planet Info")
+            ]
+            --
+            @group_body()
+            Children [
+                @label("Planet Parameters")
+                --
+                @label_small("Size Radius")
+                --
+                @FeathersNumberInput
+                --
+                @label_small("Orbit Radius")
+                --
+                @FeathersNumberInput
+                --
+                @label_small("Angular speed")
+                --
+                @FeathersNumberInput
+            ]
+        ]
+    }
+}
+
 pub fn planet(radius: f32, color: Color) -> impl Scene {
     bsn! {
         Planet
         Mesh2d(asset_value(Rectangle::from_length(radius * 2.)))
         MeshMaterial2d<PlanetMaterial>(asset_value(PlanetMaterial::new(color.to_linear().to_vec3(), radius, Vec2::ZERO)))
         on(|drag: On<PointerDragStart>, mut speeds: Query<&mut OrbitSpeed>| -> Result {
-            info!("drag start");
             speeds.get_mut(drag.entity)?.disable();
             Ok(())
         })
@@ -138,8 +174,12 @@ pub fn planet(radius: f32, color: Color) -> impl Scene {
             Ok(())
         })
         on(|drag: On<PointerDragEnd>, mut speeds: Query<&mut OrbitSpeed>| -> Result {
-            info!("drag end");
             speeds.get_mut(drag.entity)?.restore();
+            Ok(())
+        })
+        on(|click_ev: On<PointerClick>, mut selected: ResMut<SelectedPlanet>| -> Result {
+            let event_target = click_ev.event_target();
+            *selected = SelectedPlanet(Some(event_target));
             Ok(())
         })
     }
