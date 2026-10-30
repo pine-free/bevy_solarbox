@@ -35,8 +35,16 @@ impl Plugin for PlanetPlugin {
 #[derive(Clone, Copy, Debug, Component, Default)]
 pub struct Planet;
 
-#[derive(Debug, Clone, Component, Default)]
+#[derive(Debug, Clone, Component, FromTemplate)]
 pub struct SelectedPlanet;
+
+#[derive(Debug, Clone, Component, FromTemplate)]
+#[relationship(relationship_target = StatsDisplayTargets)]
+pub struct DisplayStatsIn(pub Entity);
+
+#[derive(Debug, Clone, Component, Default)]
+#[relationship_target(relationship = DisplayStatsIn)]
+pub struct StatsDisplayTargets(Vec<Entity>);
 
 #[derive(Clone, Copy, Debug, Component, Default)]
 pub struct PlanetRenderRadius(pub f32);
@@ -150,7 +158,7 @@ pub struct SelectedPlanetInfoOrbitRadius;
 #[derive(Clone, Copy, Debug, Default, Component)]
 pub struct SelectedPlanetInfoAngularSpeed;
 
-pub fn planet_info(orbit_radius: f32, size: f32, angular_speed: f32) -> impl Scene {
+pub fn planet_info() -> impl Scene {
     bsn! {
         SelectedPlanetInfo
         @group()

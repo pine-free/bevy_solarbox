@@ -17,7 +17,7 @@ use bevy::{
     },
 };
 
-use crate::{MainCamera, bg_shader::OrbitsDisplayPlane, globals};
+use crate::{MainCamera, bg_shader::OrbitsDisplayPlane, globals, planets::planet_info};
 
 pub struct SimulationSettingsPlugin;
 
@@ -239,6 +239,8 @@ pub fn config_ui() -> impl Scene {
                     commands.entity(change.source).remove::<Checked>();
                 }
             })
+        --
+        @planet_info()
         ]
     }
 }
