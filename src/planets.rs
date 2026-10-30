@@ -4,7 +4,7 @@ use bevy::{
     ecs::query::QueryData,
     feathers::{
         containers::{group, group_body, group_header},
-        controls::FeathersNumberInput,
+        controls::{FeathersNumberInput, NumberInputValue},
         display::{caption, label, label_small},
     },
     prelude::*,
@@ -27,7 +27,11 @@ impl Plugin for PlanetPlugin {
             bg_shader::plugin,
             planet_shader::plugin,
         ))
-        .add_systems(FixedUpdate, move_orbits)
+        .add_systems(FixedUpdate, (move_orbits))
+        .add_systems(
+            Update,
+            (display_planet_stats, update_planet_stats_display).chain(),
+        )
         .add_observer(observe_planet_select);
     }
 }
@@ -292,4 +296,29 @@ fn display_planet_stats(
             .entity(pl.entity)
             .insert(DisplayStatsIn(*info_display));
     });
+}
+
+fn update_planet_stats_display(
+    info_display: Single<(&PlanetStatsWidgets, &StatsDisplayTargets)>,
+    planets: Query<PlanetInfoQuery>,
+    mut commands: Commands,
+) -> Result {
+    let (
+        PlanetStatsWidgets {
+            size_radius,
+            orbit_radius,
+            angular_speed,
+        },
+        StatsDisplayTargets(t_planet),
+    ) = *info_display;
+
+    let target_planet = planets.get(*t_planet)?;
+    commands
+        .entity(*orbit_radius)
+        .insert(NumberInputValue::F32(**target_planet.orbit_radius));
+    commands
+        .entity(*angular_speed)
+        .insert(NumberInputValue::F32(**target_planet.speed));
+
+    Ok(())
 }
