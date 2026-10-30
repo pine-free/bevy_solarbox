@@ -31,6 +31,7 @@
               extensions = [
                 "rust-analyzer"
                 "llvm-tools"
+                "rust-src"
               ];
             })
             bacon
