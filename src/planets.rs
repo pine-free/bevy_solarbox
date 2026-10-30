@@ -27,7 +27,8 @@ impl Plugin for PlanetPlugin {
             bg_shader::plugin,
             planet_shader::plugin,
         ))
-        .add_systems(FixedUpdate, move_orbits);
+        .add_systems(FixedUpdate, move_orbits)
+        .add_observer(observe_planet_select);
     }
 }
 
@@ -235,4 +236,37 @@ fn move_orbits(
             (tangential_orbit.normalize() * **orbit.speed * settings.speed_modifier).extend(0.);
     }
     Ok(())
+}
+
+fn observe_planet_select(
+    click: On<PointerClick>,
+    planets: Query<Entity, With<Planet>>,
+    selected_planets: Query<Entity, With<SelectedPlanet>>,
+    mut commands: Commands,
+) {
+    let ev = click.original_event_target();
+    let is_planet = planets.get(ev).is_ok();
+    let is_selected = selected_planets.get(ev).is_ok();
+    info!("click detected");
+
+    // If we chose the planet that has already been selected
+    // then do nothing
+    if is_planet && is_selected {
+        info!("the clicked object is a selected planet, finishing");
+        return;
+    }
+
+    info!("cleaning out all selected planets");
+    // Clean all selected planets if we click off one
+    selected_planets.iter().for_each(|p| {
+        commands.entity(p).remove::<SelectedPlanet>();
+    });
+
+    if !is_planet {
+        info!("selected object is not a planet, finishing");
+        return;
+    }
+
+    info!("select planet {ev}, inserting selected component");
+    commands.entity(ev).insert(SelectedPlanet);
 }
