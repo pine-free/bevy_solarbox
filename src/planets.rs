@@ -1,13 +1,14 @@
 use std::f32;
 
 use bevy::{
-    ecs::query::QueryData,
+    ecs::{component::Mutable, query::QueryData},
     feathers::{
         containers::{group, group_body, group_header},
         controls::{FeathersNumberInput, NumberInputValue},
         display::{caption, label, label_small},
     },
     prelude::*,
+    ui_widgets::ValueChange,
 };
 
 use crate::{
@@ -174,6 +175,22 @@ pub struct PlanetStatsWidgets {
     pub angular_speed: Entity,
 }
 
+fn change_planet_stats<C, T>(
+    change: On<ValueChange<T>>,
+    info: Single<&StatsDisplayTargets, With<SelectedPlanetInfo>>,
+    mut query: Query<&mut C>,
+) -> Result
+where
+    T: Copy,
+    ValueChange<T>: Event,
+    C: Component<Mutability = Mutable> + From<T>,
+{
+    let planet = info.0;
+    let mut param = query.get_mut(planet)?;
+    *param = C::from(change.value);
+    Ok(())
+}
+
 pub fn planet_info() -> impl Scene {
     bsn! {
         SelectedPlanetInfo
@@ -197,16 +214,19 @@ pub fn planet_info() -> impl Scene {
                 --
                 #SizeRadius
                 @FeathersNumberInput
+                on(change_planet_stats::<PlanetRenderRadius, f32>)
                 --
                 @label_small("Orbit Radius")
                 --
                 #OrbitRadius
                 @FeathersNumberInput
+                on(change_planet_stats::<OrbitRadius, f32>)
                 --
                 @label_small("Angular speed")
                 --
                 #AngularSpeed
                 @FeathersNumberInput
+                on(change_planet_stats::<OrbitSpeed, f32>)
             ]
         ]
     }
@@ -222,14 +242,18 @@ pub fn planet(color: Color) -> impl Scene {
             Ok(())
         })
         on(|drag: On<PointerDrag>,
-            mut planets: Query<(&mut OrbitRadius, &OrbitAnchor), With<Planet>>,
+            anchors: Query<&OrbitAnchor>,
+            radii: Query<&PlanetRenderRadius>,
+            mut planets: Query<&mut OrbitRadius, With<Planet>>,
             transforms: Query<&mut Transform>,
             camera: Single<(&Camera, &GlobalTransform), With<MainCamera>>| -> Result {
             let (camera, camera_tr) = *camera;
-            let (mut radius, anchor) = planets.get_mut(drag.entity)?;
-            let anchor_pos = transforms.get(**anchor)?.translation;
+            let anchor_entity = **anchors.get(drag.entity)?;
+            let anchor_radius = radii.get(anchor_entity).map_or_default(|r| r.0);
+            let mut radius = planets.get_mut(drag.entity)?;
+            let anchor_pos = transforms.get(anchor_entity)?.translation;
             let new_translation = camera.viewport_to_world_2d(camera_tr, drag.pointer.position)?.extend(0.);
-            radius.0 = (new_translation - anchor_pos).length();
+            radius.0 = (new_translation - anchor_pos).length() - anchor_radius;
             Ok(())
         })
         on(|click: On<PointerClick>| {
@@ -254,6 +278,7 @@ fn update_planet_radius(
 
 fn move_orbits(
     planets: Populated<(Entity, PlanetInfoQuery), With<Planet>>,
+    radii: Populated<&PlanetRenderRadius>,
     settings: Res<SimulationConfig>,
     mut transforms: Query<&mut Transform>,
     _gizmos: Gizmos,
@@ -267,8 +292,13 @@ fn move_orbits(
         // info!("after rotation: {:?}", tangential_orbit);
         let mut planet_tr = transforms.get_mut(planet)?;
         // info!("position {planet}: {:?}", planet_tr.translation);
-        planet_tr.translation =
-            -to_orbit_center.extend(0.).normalize() * **orbit.orbit_radius + anchor_pos.translation;
+        planet_tr.translation = -to_orbit_center.extend(0.).normalize()
+            * (**orbit.orbit_radius
+                + radii
+                    .get(**orbit.orbit_anchor)
+                    .map(|r| r.0)
+                    .unwrap_or_default())
+            + anchor_pos.translation;
         // gizmos.arrow_2d(
         //     planet_tr.translation.xy(),
         //     planet_tr.translation.xy() + tangential_orbit.normalize() * **orbit.speed * 20.,

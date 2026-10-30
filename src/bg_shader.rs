@@ -4,7 +4,10 @@ use bevy::{
     sprite_render::{Material2d, Material2dPlugin},
 };
 
-use crate::{planets::PlanetInfoQuery, simulation_settings::SimulationConfig};
+use crate::{
+    planets::{PlanetInfoQuery, PlanetRenderRadius},
+    simulation_settings::SimulationConfig,
+};
 
 #[derive(Debug, Clone, Copy, Component, Default)]
 pub struct OrbitsDisplayPlane;
@@ -47,6 +50,7 @@ fn update_orbits(
     bg: Single<&MeshMaterial2d<BackgroundOrbitalsMaterial>>,
     mut material: ResMut<Assets<BackgroundOrbitalsMaterial>>,
     orbits: Query<PlanetInfoQuery>,
+    radii: Query<&PlanetRenderRadius>,
     transforms: Query<&Transform>,
 ) -> Result {
     let mut material = material
@@ -56,8 +60,12 @@ fn update_orbits(
     let mut orbit_data = vec![];
     for orbit in orbits {
         let r = *orbit.orbit_radius;
+        let r_anchor = radii
+            .get(**orbit.orbit_anchor)
+            .map(|f| f.0)
+            .unwrap_or_default();
         let anchor_pos = transforms.get(**orbit.orbit_anchor)?.translation.xy();
-        orbit_data.push(anchor_pos.extend(*r));
+        orbit_data.push(anchor_pos.extend(*r + r_anchor));
     }
 
     let v = orbit_data
