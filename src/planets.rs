@@ -42,9 +42,9 @@ pub struct SelectedPlanet;
 #[relationship(relationship_target = StatsDisplayTargets)]
 pub struct DisplayStatsIn(pub Entity);
 
-#[derive(Debug, Clone, Component, Default)]
+#[derive(Debug, Clone, Component, FromTemplate)]
 #[relationship_target(relationship = DisplayStatsIn)]
-pub struct StatsDisplayTargets(Vec<Entity>);
+pub struct StatsDisplayTargets(Entity);
 
 #[derive(Clone, Copy, Debug, Component, Default)]
 pub struct PlanetRenderRadius(pub f32);
@@ -149,18 +149,21 @@ pub struct PlanetInfoQuery {
 #[derive(Clone, Copy, Debug, Default, Component)]
 pub struct SelectedPlanetInfo;
 
-#[derive(Clone, Copy, Debug, Default, Component)]
-pub struct SelectedPlanetInfoSizeRadius;
-
-#[derive(Clone, Copy, Debug, Default, Component)]
-pub struct SelectedPlanetInfoOrbitRadius;
-
-#[derive(Clone, Copy, Debug, Default, Component)]
-pub struct SelectedPlanetInfoAngularSpeed;
+#[derive(Clone, Copy, Debug, Component, FromTemplate)]
+pub struct PlanetStatsWidgets {
+    pub size_radius: Entity,
+    pub orbit_radius: Entity,
+    pub angular_speed: Entity,
+}
 
 pub fn planet_info() -> impl Scene {
     bsn! {
         SelectedPlanetInfo
+        PlanetStatsWidgets {
+            size_radius: #SizeRadius,
+            orbit_radius: #OrbitRadius,
+            angular_speed: #AngularSpeed
+        }
         @group()
         Children [
             @group_header()
@@ -174,17 +177,17 @@ pub fn planet_info() -> impl Scene {
                 --
                 @label_small("Size Radius")
                 --
-                SelectedPlanetInfoSizeRadius
+                #SizeRadius
                 @FeathersNumberInput
                 --
                 @label_small("Orbit Radius")
                 --
-                SelectedPlanetInfoOrbitRadius
+                #OrbitRadius
                 @FeathersNumberInput
                 --
                 @label_small("Angular speed")
                 --
-                SelectedPlanetInfoAngularSpeed
+                #AngularSpeed
                 @FeathersNumberInput
             ]
         ]
@@ -277,4 +280,16 @@ fn observe_planet_select(
 
     info!("select planet {ev}, inserting selected component");
     commands.entity(ev).insert(SelectedPlanet);
+}
+
+fn display_planet_stats(
+    planets: Query<PlanetInfoQuery, Changed<SelectedPlanet>>,
+    info_display: Single<Entity, With<SelectedPlanetInfo>>,
+    mut commands: Commands,
+) {
+    planets.iter().for_each(|pl| {
+        commands
+            .entity(pl.entity)
+            .insert(DisplayStatsIn(*info_display));
+    });
 }
