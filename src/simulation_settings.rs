@@ -24,7 +24,6 @@ pub struct SimulationSettingsPlugin;
 impl Plugin for SimulationSettingsPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<SimulationConfig>()
-            .init_resource::<SelectedPlanet>()
             .add_systems(
                 Update,
                 (set_camera_zoom, set_camera_position)
@@ -250,9 +249,6 @@ pub struct SimulationConfig {
     pub camera_zoom: f32,
     pub camera_position: Vec2,
 }
-
-#[derive(Debug, Clone, Resource, Default)]
-pub struct SelectedPlanet(pub Option<Entity>);
 
 impl Default for SimulationConfig {
     fn default() -> Self {

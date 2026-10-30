@@ -4,8 +4,9 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     rust-overlay.url = "github:oxalica/rust-overlay";
+    rust-overlay.inputs.nixpkgs.follows = "nixpkgs";
     flake-parts.url = "github:hercules-ci/flake-parts";
-    bevy_cli.url = "github:TheBevyFlock/bevy_cli";
+    flake-parts.inputs.nixpkgs.follows = "nixpkgs";
   };
 
   outputs =
@@ -14,7 +15,6 @@
       nixpkgs,
       rust-overlay,
       flake-parts,
-      bevy_cli,
       ...
     }:
     flake-parts.lib.mkFlake { inherit inputs; } {
@@ -30,6 +30,7 @@
             (rust-bin.stable.latest.default.override {
               extensions = [
                 "rust-analyzer"
+                "llvm-tools"
               ];
             })
             bacon

@@ -13,7 +13,7 @@ use bevy::{
 use crate::{
     MainCamera, bg_shader,
     planet_shader::{self, PlanetMaterial},
-    simulation_settings::{SelectedPlanet, SimulationConfig, SimulationSettingsPlugin},
+    simulation_settings::{ConfigSidebar, SimulationConfig, SimulationSettingsPlugin},
 };
 
 #[derive(Default)]
@@ -33,6 +33,18 @@ impl Plugin for PlanetPlugin {
 
 #[derive(Clone, Copy, Debug, Component, Default)]
 pub struct Planet;
+
+#[derive(Debug, Clone, Component, Default)]
+pub struct SelectedPlanet;
+
+#[derive(Clone, Copy, Debug, Component, Default)]
+pub struct PlanetRenderRadius(pub f32);
+
+impl From<f32> for PlanetRenderRadius {
+    fn from(value: f32) -> Self {
+        Self(value)
+    }
+}
 
 #[derive(Clone, Debug, Component)]
 #[require(Transform)]
@@ -118,14 +130,28 @@ impl std::ops::Deref for OrbitAnchor {
 
 #[derive(QueryData)]
 #[query_data(derive(Debug))]
-pub struct OrbitQuery {
+pub struct PlanetInfoQuery {
+    pub entity: Entity,
     pub speed: &'static OrbitSpeed,
-    pub radius: &'static OrbitRadius,
+    pub orbit_radius: &'static OrbitRadius,
     pub orbit_anchor: &'static OrbitAnchor,
 }
 
-pub fn planet_info() -> impl Scene {
+#[derive(Clone, Copy, Debug, Default, Component)]
+pub struct SelectedPlanetInfo;
+
+#[derive(Clone, Copy, Debug, Default, Component)]
+pub struct SelectedPlanetInfoSizeRadius;
+
+#[derive(Clone, Copy, Debug, Default, Component)]
+pub struct SelectedPlanetInfoOrbitRadius;
+
+#[derive(Clone, Copy, Debug, Default, Component)]
+pub struct SelectedPlanetInfoAngularSpeed;
+
+pub fn planet_info(orbit_radius: f32, size: f32, angular_speed: f32) -> impl Scene {
     bsn! {
+        SelectedPlanetInfo
         @group()
         Children [
             @group_header()
@@ -139,14 +165,17 @@ pub fn planet_info() -> impl Scene {
                 --
                 @label_small("Size Radius")
                 --
+                SelectedPlanetInfoSizeRadius
                 @FeathersNumberInput
                 --
                 @label_small("Orbit Radius")
                 --
+                SelectedPlanetInfoOrbitRadius
                 @FeathersNumberInput
                 --
                 @label_small("Angular speed")
                 --
+                SelectedPlanetInfoAngularSpeed
                 @FeathersNumberInput
             ]
         ]
@@ -177,16 +206,11 @@ pub fn planet(radius: f32, color: Color) -> impl Scene {
             speeds.get_mut(drag.entity)?.restore();
             Ok(())
         })
-        on(|click_ev: On<PointerClick>, mut selected: ResMut<SelectedPlanet>| -> Result {
-            let event_target = click_ev.event_target();
-            *selected = SelectedPlanet(Some(event_target));
-            Ok(())
-        })
     }
 }
 
 fn move_orbits(
-    planets: Populated<(Entity, OrbitQuery), With<Planet>>,
+    planets: Populated<(Entity, PlanetInfoQuery), With<Planet>>,
     settings: Res<SimulationConfig>,
     mut transforms: Query<&mut Transform>,
     _gizmos: Gizmos,
@@ -201,7 +225,7 @@ fn move_orbits(
         let mut planet_tr = transforms.get_mut(planet)?;
         // info!("position {planet}: {:?}", planet_tr.translation);
         planet_tr.translation =
-            -to_orbit_center.extend(0.).normalize() * **orbit.radius + anchor_pos.translation;
+            -to_orbit_center.extend(0.).normalize() * **orbit.orbit_radius + anchor_pos.translation;
         // gizmos.arrow_2d(
         //     planet_tr.translation.xy(),
         //     planet_tr.translation.xy() + tangential_orbit.normalize() * **orbit.speed * 20.,
