@@ -28,6 +28,7 @@ fn setup(window: Single<&Window>, mut commands: Commands) {
             Mesh2d(asset_value(Rectangle::default()))
             MeshMaterial2d<BackgroundOrbitalsMaterial>(asset_value(BackgroundOrbitalsMaterial::default()))
             Transform::from_scale(Vec3::splat(size).with_z(-2.0))
+            Pickable::IGNORE
         }
     );
 }

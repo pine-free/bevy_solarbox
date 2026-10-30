@@ -2,21 +2,28 @@ use bevy::prelude::*;
 use bevy::render::render_resource::{AsBindGroup, ShaderType};
 use bevy::sprite_render::{Material2d, Material2dPlugin};
 
+use crate::planets::PlanetRenderRadius;
+
 pub fn plugin(app: &mut App) {
     app.add_plugins(Material2dPlugin::<PlanetMaterial>::default())
         .add_systems(PostUpdate, update_planet_materials);
 }
 
 fn update_planet_materials(
-    planets: Populated<(&MeshMaterial2d<PlanetMaterial>, &Transform)>,
+    planets: Populated<(
+        &MeshMaterial2d<PlanetMaterial>,
+        &Transform,
+        &PlanetRenderRadius,
+    )>,
     mut material: ResMut<Assets<PlanetMaterial>>,
 ) -> Result {
-    for (mat, transform) in planets {
+    for (mat, transform, radius) in planets {
         let mut material = material
             .get_mut(mat)
             .context("failed to get planet material")?;
 
         material.position = transform.translation.xy();
+        material.radius = **radius;
     }
 
     Ok(())

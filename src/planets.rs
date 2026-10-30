@@ -30,7 +30,12 @@ impl Plugin for PlanetPlugin {
         .add_systems(FixedUpdate, (move_orbits))
         .add_systems(
             Update,
-            (display_planet_stats, update_planet_stats_display).chain(),
+            (
+                update_planet_radius,
+                display_planet_stats,
+                update_planet_stats_display,
+            )
+                .chain(),
         )
         .add_observer(observe_planet_select);
     }
@@ -52,6 +57,14 @@ pub struct StatsDisplayTargets(Entity);
 
 #[derive(Clone, Copy, Debug, Component, Default)]
 pub struct PlanetRenderRadius(pub f32);
+
+impl std::ops::Deref for PlanetRenderRadius {
+    type Target = f32;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
 
 impl From<f32> for PlanetRenderRadius {
     fn from(value: f32) -> Self {
@@ -145,7 +158,8 @@ impl std::ops::Deref for OrbitAnchor {
 #[query_data(derive(Debug))]
 pub struct PlanetInfoQuery {
     pub entity: Entity,
-    pub speed: &'static OrbitSpeed,
+    pub angular_speed: &'static OrbitSpeed,
+    pub planet_radius: &'static PlanetRenderRadius,
     pub orbit_radius: &'static OrbitRadius,
     pub orbit_anchor: &'static OrbitAnchor,
 }
@@ -198,11 +212,11 @@ pub fn planet_info() -> impl Scene {
     }
 }
 
-pub fn planet(radius: f32, color: Color) -> impl Scene {
+pub fn planet(color: Color) -> impl Scene {
     bsn! {
         Planet
-        Mesh2d(asset_value(Rectangle::from_length(radius * 2.)))
-        MeshMaterial2d<PlanetMaterial>(asset_value(PlanetMaterial::new(color.to_linear().to_vec3(), radius, Vec2::ZERO)))
+        Mesh2d(asset_value(Rectangle::default()))
+        MeshMaterial2d<PlanetMaterial>(asset_value(PlanetMaterial::new(color.to_linear().to_vec3(), 1.0, Vec2::ZERO)))
         on(|drag: On<PointerDragStart>, mut speeds: Query<&mut OrbitSpeed>| -> Result {
             speeds.get_mut(drag.entity)?.disable();
             Ok(())
@@ -218,11 +232,24 @@ pub fn planet(radius: f32, color: Color) -> impl Scene {
             radius.0 = (new_translation - anchor_pos).length();
             Ok(())
         })
+        on(|click: On<PointerClick>| {
+            info!("planet {} clicked", click.entity);
+        })
         on(|drag: On<PointerDragEnd>, mut speeds: Query<&mut OrbitSpeed>| -> Result {
             speeds.get_mut(drag.entity)?.restore();
             Ok(())
         })
     }
+}
+
+fn update_planet_radius(
+    planets: Query<PlanetInfoQuery, Changed<PlanetRenderRadius>>,
+    mut transforms: Query<&mut Transform>,
+) -> Result {
+    for planet in planets.iter() {
+        transforms.get_mut(planet.entity)?.scale = Vec3::splat(**planet.planet_radius * 2.);
+    }
+    Ok(())
 }
 
 fn move_orbits(
@@ -248,7 +275,8 @@ fn move_orbits(
         //     LinearRgba::RED,
         // );
         planet_tr.translation +=
-            (tangential_orbit.normalize() * **orbit.speed * settings.speed_modifier).extend(0.);
+            (tangential_orbit.normalize() * **orbit.angular_speed * settings.speed_modifier)
+                .extend(0.);
     }
     Ok(())
 }
@@ -260,6 +288,7 @@ fn observe_planet_select(
     mut commands: Commands,
 ) {
     let ev = click.original_event_target();
+    info!("clicked entity {:#?}", ev);
     let is_planet = planets.get(ev).is_ok();
     let is_selected = selected_planets.get(ev).is_ok();
     info!("click detected");
@@ -314,11 +343,14 @@ fn update_planet_stats_display(
 
     let target_planet = planets.get(*t_planet)?;
     commands
+        .entity(*size_radius)
+        .insert(NumberInputValue::F32(**target_planet.planet_radius));
+    commands
         .entity(*orbit_radius)
         .insert(NumberInputValue::F32(**target_planet.orbit_radius));
     commands
         .entity(*angular_speed)
-        .insert(NumberInputValue::F32(**target_planet.speed));
+        .insert(NumberInputValue::F32(**target_planet.angular_speed));
 
     Ok(())
 }
